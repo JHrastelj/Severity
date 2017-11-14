@@ -1,5 +1,8 @@
 # Survival analysis
 
+## Useful code:
+Removing duplicate lines in a file:  awk '!seen[$0]++' filename
+
 ## Phenotyping data
 
 Aim is to assess correlation between SNP genotype and disability.
