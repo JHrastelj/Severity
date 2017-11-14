@@ -1,2 +1,0 @@
-# Severity
-Severity project methods
