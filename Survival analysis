@@ -1,0 +1,94 @@
+# Survival analysis
+
+## Phenotyping data
+
+Aim is to assess correlation between SNP genotype and disability.
+
+Helpful code to find matching lines:
+awk 'NR==FNR{pats[$2]; next} $1 in pats' IDmatch Pheno > GenoPhen
+where IDmatch file is GenotypeID and LocalID.
+
+472 patients with disability data:  3 patients had local ID changed, 1 excluded due to missing date of onset, rest due to retrospective change in diagnosis.
+
+Looked through clinical information to add accurate date of onset for the patient and added their data to pilotdisabilityfinal manually.
+Updated the local ID of the two patients in LocalID file and IDmatch.
+
+Removed those that were excluded by QC so that IDmatchx is GenotypingID and LocalID for only patients to be included in analysis.
+
+awk ‘NR==FNR{pats[$1]; next} $2 in pats’ LocalID IDmatch > IDmatchx
+
+We consider age at EDSS 6 to be the most robust outcome measure for disbaility accumulation in our dataset.
+
+## Pilot survival analysis
+
+Installation required:  SurvivalGWAS_SV (Open access command line based software:  https://www.liverpool.ac.uk/translational-medicine/research/statistical-genetics/survival-gwas-sv) and Mono (http://www.mono-project.com).
+
+Method:  Genome-wide Cox proportional hazards analysis:  SNP genotypes vs age at EDSS 6.  Co-variates:  sex, AAO and onset type (ROMS vs PPMS).
+
+Genotype file required = .gen or .impute or .vcf
+
+Extracted those patients from bed, bim and fam files to be included in pilot analysis (476 patients):
+
+./plink --noweb --bfile 2011_NomissHighMAFFunrelated2 --keep IDPilotGeno.txt --make-bed --out Pilot.geno
+
+Where IDPilotGeno.txt is an extract from the fam file of only patients to be included in pilot analysis.
+
+Converted bed, bim and fam files for final pilot cohort to .vcf files using plink:
+
+./plink --noweb --bfile Pilot.geno --recode vcf-iid --out pilotgeno
+Where vcf-iid creates file only with IID and discards FID.
+
+Phenotype file required = sample.txt
+
+Created sample file as below as excel file:
+
+Sample_id Subject_id Missing Sex SurvivalTime CensoringIndicator Co-variate1 Co-variate2 Co-variate3 Co-variate4 Co-variate5
+
+Sample_id = Genotyping ID
+Subject_id = Genotyping ID
+Missing = 0
+Sex = 0 is female, 1 is male
+SurvivalTime = age_edss6
+CensoringIndicator = edss6_status (1 is reached, 0 is not reached)
+Co-variate1 - Sex
+Co-variate2 = AAO
+Co-variate3 = groupCourse (0=ROMS, 1=PPMS)
+Co-variate4 = PC1 from PCA with 1000 genomes data
+Co-variate5 – PC2 from PCA with 1000 genomes data
+
+Sorted it in excel to ensure patients are in the same order as specified in the .vcf file.
+
+vi pilotpheno.txt
+copied data in.
+
+Changed delimiter to space:
+tr '\t' ' ' pilotpheno.txt > pilotpheno2.txt
+
+Run SurvivalGWAS_SV:
+
+Command:
+mono survivalgwas-sv.exe -gf=pilotgeno.vcf -sf=pilotpheno2.txt -threads=1 -t=age_edss6 -c=edss_status -cov=Sex,AAO,groupCourse,PC1,PC2 -lstart=0 -lstop=550318 -p=onlysnp -o=PilotSurvivalResults.txt
+
+Create shell script for submitting job to ROCKS:
+
+vi pilotsurvival.sh
+---------
+#!/bin/bash
+#$ -o stdout
+#$ -e stderr
+
+MONO=/share/apps/mono-5.8.0.22/bin/mono
+DIRECTORY=/home/wpmjh18
+str1=0
+str=550318
+no_of_jobs=10
+inc=`expr \( $str - $str1 \) \/ $no_of_jobs` 
+
+nstart=`expr \( $SGE_TASK_ID - 1 \) \* $inc`
+nstop=`expr $nstart + $inc - 1`
+
+$MONO $DIRECTORY/survivalgwas-sv.exe -gf=$DIRECTORY/pilotgeno.vcf -sf=$DIRECTORY/pilotpheno2.txt -threads=1 -t=age_edss6 -c=edss6_status -cov=Gender,AAO,groupCourse,PC1,PC2 -lstart=$nstart -lstop=$nstop -m=cox -p=onlysnp -o=$DIRECTORY/PilotSurvivalResults${SGE_TASK_ID}.txt
+---------
+
+Submit job to ROCKS:
+qsub -t1:10 pilotsurvival.sh
