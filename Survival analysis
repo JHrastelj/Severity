@@ -3,6 +3,7 @@
 ## Useful code:
 Removing duplicate lines in a file:  awk '!seen[$0]++' filename
 'VLOOKUP' in linux bash:  join -1 x -2 y fileA fileB > fileAB #where the common field between the two files is field x in the first file (fileA) and field y in the second file (fileB) - on each line it will print the common field followed by the remaining fields of fileA followed by the remaining fields of fileB.
+Findings differences between two files:  diff fileA fileB
 
 ## Phenotyping data
 
