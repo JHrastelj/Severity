@@ -2,8 +2,13 @@
 
 ## Useful code:
 Removing duplicate lines in a file:  awk '!seen[$0]++' filename
-'VLOOKUP' in linux bash:  join -1 x -2 y fileA fileB > fileAB #where the common field between the two files is field x in the first file (fileA) and field y in the second file (fileB) - on each line it will print the common field followed by the remaining fields of fileA followed by the remaining fields of fileB.
+'VLOOKUP' in linux bash:  join -1 x -2 y fileA fileB > fileAB #where the common field between the two files is field x in the first file (fileA) and field y in the second file (fileB) - on each row it will print the common field followed by the remaining fields of fileA followed by the remaining fields of fileB.
 Findings differences between two files:  diff fileA fileB
+Deleting rows containing a particular string e.g. rs123456:  sed '/rs123456/d' file > newfile
+Deleting specific range of rows:  sed 'f,ld' file > newfile #where f is the first row to be deleted and l is the last
+Finding common elements in two files:  awk 'NR==FNR{a[$1];next}$1 in a{print $1}' file1 file2 #builds first column of first file into an array then checks second file line-by-line for that value and prints it if it exists.  #can adjust to printing the whole line by changing to $0 at the end.
+To get rid of incompatibility between sort and join:  LANG=en_EN sort -k 1,1 <myfile> ... then LANG=en_EN join ..
+To sort a file but ignore the (single line) header:  (head -n 1 <file> && tail -n +2 <file> | sort) > newfile
 
 ## Phenotyping data
 
@@ -97,3 +102,64 @@ $MONO $DIRECTORY/survivalgwas-sv.exe -gf=$DIRECTORY/pilotgeno.vcf -sf=$DIRECTORY
 
 Submit job to ROCKS:
 qsub -t1:10 pilotsurvival.sh
+
+Ouput successful for 550282 SNPs - No output for 8 SNPs on X chromosome between positions 154774663-154929162.  Unclear why - will need to look at these SNPs in more detail.
+
+## Adding chromosome numbering for Manhattan plot.
+
+Made txt file in format - Chr SNP - from vcf file:
+awk '{print $1,$2}' pilotgeno.vcf > piotChrSNP.txt
+
+Deleted descriptive lines at top of file in txt editor.
+
+Deleted 8 SNPs from pilotChrSNP.txt for which the analysis failed:
+sed '/rs1/d' pilotChrSNP.txt > pilotChrSNP2.txt
+sed '/rs2/d' pilotChrSNP2.txt > pilotChrSNP3.txt
+etc.
+OR delete the range of rows as they are contiguous:
+sed 'f,ld' pilotChrSNP.txt > pilotChrSNP2.txt #where f is the first line to be deleted and l is the last
+
+Sort files so compatible with join:
+LANG=en_EN sort -k2 pilotChrSNP2.txt > pilotChrSNP2sorted.txt
+LANG=en_EN sort -k1 PilotSurvivalResults.txt > PilotSurvivalResultssorted.txt
+
+Join pilotChrSNP2.txt with PilotSurvivalResults.txt to add chromosome numbers:
+join -1 2 -2 1 pilotChrSNP2sorted.txt PilotSurvivalResultssorted.txt > PilotSurvivalResultsChr.txt
+
+Delete extra SNP column (4th column):
+awk '{print $1,$2,$3,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17}' PilotSurvivalResultsChr.txt
+
+Re-sort based on Chromosome number and bp position:
+LANG=en_EN sort -k 2 PilotSurvivalResultsChr.txt > PilotSurvivalResultsChrOrdered.txt
+
+Make file compatible with 'qqman' software in R:
+awk '{print $1,$2,$3,$11}' PilotSurvivalResultsChrOrdered.txt > PilotSurvivalResultsManQQ.txt
+
+Change 'Waldpv' to 'P' in header using text editor.
+
+## Manhattan plot and Q-Q plot in R
+
+getwd()
+
+install.packages("qqman")
+require(qqman)
+
+Need to make sure that the file to be read in is in the right format - 3 columns:  SNP, CHR, BP, P
+
+SR <- read.table("PilotSurvivalResultsManQQ.txt", header=T)
+
+head(SR)
+SRn <- as.numeric(as.character(SR$P))
+
+# How many SNPs on each chromosome?
+as.data.frame(table(SR))
+
+# Manhattan plot
+jpeg("PilotSurvivalResultsManhattan2.jpg")
+manhattan(SRn)
+dev.off()
+
+#Q-Q plot
+jpeg("PilotSurvivalResultsQQ.jpg")
+qq(SRn)
+dev.off()
