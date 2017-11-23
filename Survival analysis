@@ -137,6 +137,12 @@ awk '{print $1,$2,$3,$11}' PilotSurvivalResultsChrOrdered.txt > PilotSurvivalRes
 
 Change 'Waldpv' to 'P' in header using text editor.
 
+Convert all P values from exponential format:
+awk '{printf("%s %s %s %.18f\n",$1,$2,$3,$4)}' PilotSurvivalResultsManQQ.txt > PilotSurvivalResultsManQQSorted.txt
+
+Rank SNPs by P value:
+LANG=en_EN sort -k 4 PilotSurvivalResultsManQQSorted.txt > PilotSurvivalResultsManQQSortedP.txt
+
 ## Manhattan plot and Q-Q plot in R
 
 getwd()
