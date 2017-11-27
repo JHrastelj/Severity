@@ -193,7 +193,7 @@ Then extract only those patients with genotype GG:
 grep 'G G' SNP1.txt > SNP1GG.txt
 
 Combine files together:
-cat SNP1AA.txt SNP1.AG.txt SNP1GG.txt > SNP1all.txt
+cat SNP1AA.txt SNP1AG.txt SNP1GG.txt > SNP1all.txt
 
 Join this with phenotype file used for survival analysis - either use join command or manually using excel.
 Then remove unwanted columns so you end up with the columns:  Subject_id Group_geno edss6_status age_edss6
@@ -217,3 +217,5 @@ pdf("SNP1_Survival_Curve.pdf")
 plot(model_fit, lty= c(1, 2, 3), xlab="Age (years)", ylab="Proportion of patients who have not reached EDSS 6", main="Kaplan-Meier Curves for SNP rs6517312")
 legend("topright", c("Homozygous A", "Heterozygous", "Homozygous G"), lty=c(1, 2, 3))
 dev.off()
+
+Then need to repeat for each interesting SNP.
