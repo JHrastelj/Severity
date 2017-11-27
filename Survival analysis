@@ -174,5 +174,46 @@ dev.off()
 
 Need to extract genotype for each individual at each top SNP.
 
-./plink --noweb --bfile Pilot.geno --snp rs------- --make-bed --out SNP1
+vi SNP1.txt
+  rs--------
 
+./plink --noweb --bfile Pilot.geno --extract SNP1.txt --recode --out SNP1
+This creates .ped and .map files for only the SNPs listed in SNP1.txt - in this case just one SNP.
+
+Then remove unwanted columns from .ped file:
+awk '{print $2,$7,$8}' SNP1.ped > SNP1.txt
+
+Then extract only those patients with genotype AA:
+grep 'A A' SNP1.txt > SNP1AA.txt
+
+Then extract only those patients with genotype AG:
+grep 'A G' SNP1.txt > SNP1AG.txt
+
+Then extract only those patients with genotype GG:
+grep 'G G' SNP1.txt > SNP1GG.txt
+
+Combine files together:
+cat SNP1AA.txt SNP1.AG.txt SNP1GG.txt > SNP1all.txt
+
+Join this with phenotype file used for survival analysis - either use join command or manually using excel.
+Then remove unwanted columns so you end up with the columns:  Subject_id Group_geno edss6_status age_edss6
+Where Group_geno is 1=AA, 2=AG, 3=GG.
+
+Then use R to plot Kaplan-Meier curves:
+
+setwd("/Users/jameshrastelj/Desktop/James_Work/MS_Research/Severity/GWAS2011/SurvivalAnalysis")
+
+library(ggplot2)
+library(survival)
+
+snp1 <- read.csv("SNP1all.csv", header=T)
+snp1df <- data.frame(snp1)
+
+head(snp1df)
+
+model_fit <- survfit(Surv(age_edss6, edss6_status) ~ Group_geno, data=snp1df)
+
+pdf("SNP1_Survival_Curve.pdf")
+plot(model_fit, lty= c(1, 2, 3), xlab="Age (years)", ylab="Proportion of patients who have not reached EDSS 6", main="Kaplan-Meier Curves for SNP rs6517312")
+legend("topright", c("Homozygous A", "Heterozygous", "Homozygous G"), lty=c(1, 2, 3))
+dev.off()
