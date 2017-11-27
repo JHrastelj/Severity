@@ -157,15 +157,22 @@ SR <- read.table("PilotSurvivalResultsManQQ.txt", header=T)
 head(SR)
 SRn <- as.numeric(as.character(SR$P))
 
-# How many SNPs on each chromosome?
+How many SNPs on each chromosome?
 as.data.frame(table(SR))
 
-# Manhattan plot
+Manhattan plot
 jpeg("PilotSurvivalResultsManhattan2.jpg")
 manhattan(SRn)
 dev.off()
 
-#Q-Q plot
+Q-Q plot
 jpeg("PilotSurvivalResultsQQ.jpg")
 qq(SRn)
 dev.off()
+
+## Creating Kaplan-Meier Curves for top SNPs
+
+Need to extract genotype for each individual at each top SNP.
+
+./plink --noweb --bfile Pilot.geno --snp rs------- --make-bed --out SNP1
+
