@@ -183,6 +183,9 @@ This creates .ped and .map files for only the SNPs listed in SNP1.txt - in this 
 Then remove unwanted columns from .ped file:
 awk '{print $2,$7,$8}' SNP1.ped > SNP1.txt
 
+Check nucleotide for effect and non-effect alleles:
+grep 'rs-------' PilotSurvivalResults.txt
+
 Then extract only those patients with genotype AA:
 grep 'A A' SNP1.txt > SNP1AA.txt
 
@@ -192,8 +195,13 @@ grep 'A G' SNP1.txt > SNP1AG.txt
 Then extract only those patients with genotype GG:
 grep 'G G' SNP1.txt > SNP1GG.txt
 
+Check numbers of homozygous A, heterozygous and homozygous G in pilot cohort:
+wc -l SNP1AA.txt
+wc -l SNP1AG.txt
+wc -l SNP1GG.txt
+
 Combine files together:
-cat SNP1AA.txt SNP1AG.txt SNP1GG.txt > SNP1all.txt
+cat SNP1AA.txt SNP1AG.txt SNP1GA.txt SNP1GG.txt > SNP1all.txt
 
 Join this with phenotype file used for survival analysis - either use join command or manually using excel.
 Then remove unwanted columns so you end up with the columns:  Subject_id Group_geno edss6_status age_edss6
@@ -206,7 +214,7 @@ setwd("/Users/jameshrastelj/Desktop/James_Work/MS_Research/Severity/GWAS2011/Sur
 library(ggplot2)
 library(survival)
 
-snp1 <- read.csv("SNP1all.csv", header=T)
+snp1 <- read.csv("SNP1.csv", header=T)
 snp1df <- data.frame(snp1)
 
 head(snp1df)
@@ -219,3 +227,5 @@ legend("topright", c("Homozygous A", "Heterozygous", "Homozygous G"), lty=c(1, 2
 dev.off()
 
 Then need to repeat for each interesting SNP.
+
+NB:  Had to delete 95328_A06 from SNP5 and 89807_G10 from SNP19 because genotype was 0 0
