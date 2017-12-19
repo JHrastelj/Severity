@@ -349,3 +349,24 @@ Unexplained cases – not present in files of excluded individuals, but says “
 
 None of these samples appear in either of the GWAS files listing the excluded individuals.  Supplementary notes of the GWAS says that they analysed 481 of our cases, so these cases were probably removed.  The GWAS used different methods to measure heterozygosity and gender, but unlikely to have been due to that.  The GWAS file for those excluded during PCA lists only 2 individuals, which is surprising.  Also, the GWAS used HapMap phase 2 individuals for the PCA and included cases from multiple genetic backgrounds, whereas I have used the more recent 1000 genomes data and the cohort is relatively genetically homogenous–this may explain the differences.
 
+# Imputation
+For imputation the data must be of the same genome build as the chosen reference.  For my data build 37 is required (aligned to HRC dataset).  For the PCA (above) I used plink to update the SNP positions and strands, but there were 276 SNPs that mismatched due to different alleles (N) when compared with the reference genome.  In order to correct for these and ensure most accurate build update use the perl script recommended by the Michigan Imputation website:
+
+http://www.well.ox.ac.uk/~wrayner/tools/HRC-1000G-check-bim-v4.2.7.zip
+
+Using the updated SNP information contained in this file:
+
+ftp://ngs.sanger.ac.uk/production/hrc/HRC.r1-1/HRC.r1-1.GRCh37.wgs.mac5.sites.tab.gz
+
+And using a file containing MAFs for each SNP in dataset created using plink:
+
+plink --noweb --bfile 2011_NomissHighMAFFunrelated2 --freq --out 2011_NomissHighMAFFunrelated2.frq
+
+The perl script outputs file summarising the differences between my data and the reference HRC dataset in terms of SNP positions, alleles and strand.  The script also outputs a script of cutomised plink commands to run to update my data (Run-plink.sh) – change it to executable, add '--noweb' to start of each command and run the sript:
+
+chmod -x Run-plink.sh
+./Run-plink.sh
+
+This script outputs updated dataset in whole form and by chromosome.
+
+Now upload data to Michigan imputation server.
