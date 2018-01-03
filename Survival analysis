@@ -46,7 +46,7 @@ Where IDPilotGeno.txt is an extract from the fam file of only patients to be inc
 Converted bed, bim and fam files for final pilot cohort to .vcf files using plink:
 
 ./plink --noweb --bfile Pilot.geno --recode vcf-iid --out pilotgeno
-Where vcf-iid creates file only with IID and discards FID.
+Where vcf-iid is used to identify individuals rather than FID.
 
 Phenotype file required = sample.txt
 
