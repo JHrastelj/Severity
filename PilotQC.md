@@ -388,4 +388,4 @@ Now sort and bgzip file:
 Repeat for all chromosomes.
 
 Now upload data to Michigan imputation server.
-N.B. Chose Eagle for phasing of autosomla chromosomes, but did not allow this for X chromosome, so chose shapeIT for the X chromosome.
+N.B. Chose Eagle for phasing of autosomal chromosomes, but did not allow this for X chromosome, so chose shapeIT for the X chromosome.
