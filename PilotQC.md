@@ -369,4 +369,23 @@ chmod -x Run-plink.sh
 
 This script outputs updated dataset in whole form and by chromosome.
 
+Further prepare data for upload:
+
+Change chromosome labelling to format recognised by Michigan imputation server:
+
+First convert bed, bim and fam files to ped and map files:
+
+plink2 --bfile 2011_NomissHighMAFFunrelated2-updated-chr1 --recode --out 2011_NomissHighMAFFunrelated2-updated-Chrom1
+
+Then change chromosome labelling and convert to vcf file:
+
+plink2 --ped 2011_NomissHighMAFFunrelated2-updated-Chrom1.ped --map 2011_NomissHighMAFFunrelated2-updated-Chrom1.map --output-chr M --recode vcf-iid --out 2011_NomissHighMAFFunrelated2-updated-Chrom1
+
+Now sort and bgzip file:
+
+./vcf-sort 2011_NomissHighMAFFunrelated2-updated-Chrom1.vcf | bgzip -c > 2011_NomissHighMAFFunrelated2-updated-Chrom1.vcf.gz
+
+Repeat for all chromosomes.
+
 Now upload data to Michigan imputation server.
+N.B. Chose Eagle for phasing of autosomla chromosomes, but did not allow this for X chromosome, so chose shapeIT for the X chromosome.
