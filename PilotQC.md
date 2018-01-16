@@ -256,11 +256,23 @@ awk '($1==20)&&($4>=32000000)&&($4<=34500000){print $2}'  2011_g1000_PCA.bim >> 
 
 LD pruned merged dataset using ROCKS:
 
-vi james_LDprune:
-plink --noweb --bfile 2011_g1000_PCA --indep-pairwise 1500 150 0.2 --out 2011_g1000_PCA
-chmod 777 james_LDprune
+nano LDprune.sh:
+-
+#!/bin/bash
+#$ -S /bin/bash
+#$ -V
+#$ -b n
+#$ -wd /home/wpmjh18/PCA/input/prune
+#$ -l h_vmem=10G
+#$ -l h_rt=06:00:00
 
-qsub –V –b n -cwd james_LDprune
+plink --noweb --bfile 2011_g1000_PCA --indep-pairwise 1500 150 0.2 --out 2011_g1000_PCA
+
+
+chmod 744 james_LDprune
+
+qsub LDprune.sh
+
 
 Then created bed, bim and fam files including only pruned SNPs for combined dataset:
 
@@ -285,8 +297,8 @@ qtmode: 0
 Submitted the job to ROCKS:
 
 vi eigenstrat.sh
-#/!bin/bash
-#$ -S bin/bash
+#!/bin/bash
+#$ -S /bin/bash
 #$ -cwd
 #$ -q all.q
 /share/apps/EIG-6.1.4/bin/smartpca -p 2011_g1000_PCA.par
