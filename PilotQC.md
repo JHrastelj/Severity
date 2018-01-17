@@ -257,14 +257,14 @@ awk '($1==20)&&($4>=32000000)&&($4<=34500000){print $2}'  2011_g1000_PCA.bim >> 
 LD pruned merged dataset using ROCKS:
 
 nano LDprune.sh:
--
+
 #!/bin/bash
 #$ -S /bin/bash
 #$ -V
 #$ -b n
 #$ -wd /home/wpmjh18/PCA/input/prune
 #$ -l h_vmem=10G
-#$ -l h_rt=06:00:00
+#$ -l h_rt=30:00:00
 
 plink --noweb --bfile 2011_g1000_PCA --indep-pairwise 1500 150 0.2 --out 2011_g1000_PCA
 
@@ -276,7 +276,7 @@ qsub LDprune.sh
 
 Then created bed, bim and fam files including only pruned SNPs for combined dataset:
 
-plink –noweb  --bfile 2011_g1000_PCA --extract 2011_g1000_PCA.prune.in –make-bed –out 2011_g1000_PCApruned
+plink --noweb  --bfile 2011_g1000_PCA --extract 2011_g1000_PCA.prune.in --make-bed --out 2011_g1000_PCApruned
 
 Then create .par file to run EIGENSTRAT:
 
