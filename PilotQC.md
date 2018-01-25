@@ -169,26 +169,32 @@ Identify SNPs common to 1000 genomes data and my data:
 1000 genomes data available on ROCKS at /export/home/SHARED
 Copied 1000 genomes binary files (All populations:  g1000_All_Populations_QC_No_Bad_LD and separate populations) and latest version of my data (2011_NomissHighMAFFUnrelated2) to my home directory on ROCKS.
 
+
 Created text files of SNPs for each dataset:
 
 awk ‘{ print $2 }’ 2011_NomissHighMAFFunrelated2.bim > 2011_SNPs.txt
 
 awk ‘{ print $2 }’ g1000_All_Populations_QC_No_Bad_LD.bim > g1000_SNPs.txt 
 
+
 Created text file of SNPs common to both 1000 genomes dataset and 2011 dataset:
 
 awk ‘NR==FNR{c[$1]++;next};c[$1] > 0’ g1000_SNPs.txt 2011_SNPs.txt > PCA_SNPs.txt
+
 
 Used plink to create binary files including only SNPs common to both datasets:
 
 plink --noweb –bfile g1000_All_Populations_QC_No_Bad_LD --extract PCA_SNPs.txt --make-bed --out g1000_PCA
 
 plink --noweb –bfile 2011_NomissHighMAFFunrelated2 --extract PCA_SNPs.txt --make-bed --out 2011_PCA
+
+
 Use plink to update SNP positions so that they match in 2011 and g1000 data:
 
 awk ‘{print $2, $4}’ g1000_PCA.bim > g1000_SNPpos.txt
 
 plink --noweb --bfile 2011_PCA --update-map g1000_SNPpos.txt --make-bed --out 2011_PCAupdated
+
 
 Then merge binary files for 2011 and g1000 datasets:
 
@@ -198,9 +204,11 @@ plink --noweb --bfile 2011_PCAupdated --flip 2011_g1000.missnp --make-bed --out 
 
 plink --noweb --bfile 2011_PCAupdatedflip --bmerge g1000_PCA.bed g1000_PCA.bim g1000_PCA.fam --make-bed --out 2011flip_g1000
 
+
 Merger failed, but this corrected the mismatching for all except 276 SNPs, which need flipping back to original configuration for inspection/removal:
 
 plink --noweb --bfile 2011_PCAupdatedflip --flip 2011flip_g1000.missnp --make-bed --out 2011_PCAupdatedflipcorr
+
 
 Tried merger again:
 
@@ -208,11 +216,13 @@ plink --noweb --bfile 2011_PCAupdatedflipcorr --bmerge g1000_PCA.bed g1000_PCA.b
 
 Failed as 276 SNPs still mismatching in terms of alleles.
 
+
 Used plink to extract binary files of mismatching SNPs only from 2011 and g1000 datsets:
 
 plink --noweb --bfile 2011_PCAupdatedflipcorr --extract 2011flip_g1000.missnp --make-bed --out 2011_PCAflipmismatches
 
 plink --noweb --bfile g1000_PCA --extract 2011flip_g1000.missnp --make-bed --out g1000_PCAflipmismatches
+
 
 Visual inspection of bim files showed that all mismatched SNPs have one allele assigned N in 2011 data, but two alleles in g1000 data.
 
@@ -222,9 +232,11 @@ plink --noweb --bfile 2011_PCAupdatedflipcorr --exclude 2011flip_g1000.missnp --
 
 plink --noweb --bfile g1000_PCA --exclude 2011flip_g1000.missnp --make-bed --out g1000_PCAex
 
+
 Merged datasets:
 
 plink --noweb --bfile 2011_PCAupdatedflipcorrex --bmerge g1000_PCAex.bed g1000_PCAex.bim g1000_PCAex.fam --make-bed --out 2011_g1000_PCA
+
 
 Removed LD regions known to disrupt PCA:
 
@@ -314,6 +326,119 @@ Write out a list of only MS individuals from combined dataset (combPCA) - using 
 Write out a list of all cases who exceed 2SDs from the mean of PC1 of MS cases only.
 Repeat to create 4 files in total:  PC1toohigh, PC1toolow, PC2toohigh, PC2toolow.  NB:  Ensure that the mean and SD used is that of the original MS only dataset (don’t re-calculate mean and SD after each exclusion).
 Exclude PC outliers as described in file PC5 to create a ‘cutMS’ dataset.
+
+
+# Second attempt of PCA using updated genome build
+
+First repeat attempt did not extract only SNPs common to both datasets first - strange PCA plot produced.
+Therefore, repeated the analysis after selecting only SNPs common to both datasets before merger.  First repeat attempt flagged 42 SNPs that required strand flipping - flipped these before proceding with second repeat attempt.
+
+plink --noweb --bfile 2011_NomissHighMAFFunrelated2-updated-AllChrom --flip 2011newbuild_g1000.missnp --make-bed --out 2011_NomissHighMAFFunrelated2-updated-AllChrom_flip
+
+
+Created text files of SNPs for each dataset:
+
+awk ‘{print $2}’ 2011_NomissHighMAFFunrelated2-updated-AllChrom_flip.bim > 2011newbuild_SNPs.txt
+
+awk ‘{print $2}’ g1000_All_Populations_QC_No_Bad_LD.bim > g1000_SNPs.txt 
+
+
+Created text file of SNPs common to both g1000 dataset and MS dataset:
+
+awk ‘NR==FNR{c[$1]++;next};c[$1] > 0’ g1000_SNPs.txt 2011newbuild_SNPs.txt > MSg1000newbuild_SNPs.txt
+
+
+Used plink to create binary files including only SNPs common to both datasets:
+
+plink --noweb --bfile g1000_All_Populations_QC_No_Bad_LD --extract MSg1000newbuild_SNPs.txt --make-bed --out g1000newbuild
+
+plink --noweb --bfile 2011_NomissHighMAFFunrelated2-updated-AllChrom_flip --extract MSg1000newbuild_SNPs.txt --make-bed --out 2011newbuild
+
+
+Merged MS data with g1000 data:
+
+plink --noweb --bfile 2011newbuild --bmerge g1000newbuild.bed g1000newbuild.bim g1000newbuild.fam --make-bed --out 2011newbuild_g1000
+
+Succeeded, but with warnings of different SNP positions for 77 SNPs.
+
+
+Use plink to update SNP positions so that they match in 2011 and g1000 data:
+
+awk ‘{print $2, $4}’ g1000newbuild.bim > g1000_SNPpos.txt
+
+plink --noweb --bfile 2011newbuild --update-map g1000_SNPpos.txt --make-bed --out 2011newbuild_updatedPos
+
+
+Repeat merger:
+
+plink --noweb --bfile 2011newbuild_updatedPos --bmerge g1000newbuild.bed g1000newbuild.bim g1000newbuild.fam --make-bed --out 2011newbuild_g1000
+
+
+Then LD pruned combined dataset:
+
+nano LDprune.sh:
+
+#!/bin/bash
+#$ -S /bin/bash
+#$ -V
+#$ -b n
+#$ -wd /home/wpmjh18/PCA/input/prune
+#$ -l h_vmem=10G
+#$ -l h_rt=30:00:00
+
+plink --noweb --bfile 2011newbuild_g1000 --indep-pairwise 1500 150 0.2 --out 2011newbuild_g1000
+
+
+chmod 744 james_LDprune
+
+qsub LDprune.sh
+
+Created .prune.in (104504 SNPs) and .prune.out (204500 SNPs) files.
+
+Then created bed, bim and fam files including only pruned SNPs for combined dataset:
+
+plink --noweb  --bfile 2011newbuild_g1000 --extract 2011newbuild_g1000.prune.in --make-bed --out 2011newbuild_g1000pruned
+
+
+Then create .par file to run EIGENSTRAT:
+
+nano 2011newbuild_g1000.par
+
+genotypename: 2011newbuild_g1000pruned.bed
+snpname: 2011newbuild_g1000pruned.bim
+indivname: 2011newbuild_g1000pruned.fam
+evecoutname: 2011newbuild_g1000pruned.pca.evec
+evaloutname: 2011newbuild_g1000pruned.eval
+altnormstyle: NO
+numoutevec: 10
+numoutlieriter: 0
+numoutlierevec: 10
+outliersigmathresh: 0
+qtmode: 0
+
+
+Wrote script to submit the job to ROCKS:
+
+nano eigenstrat.sh
+
+#!/bin/bash
+#$ -S /bin/bash
+#$ -V
+#$ -b n
+#$ -wd /home/wpmjh18/PCA/input/prune
+#$ -q all.q
+
+/share/apps/EIG-6.1.4/bin/smartpca -p /home/wpmjh18/PCA/bin/2011newbuild_g1000.par
+
+
+Submitted job to ROCKS:
+
+qsub eigenstrat.sh
+
+
+The .pca.evec output file contains principal components that were plotted in R
+
+
 
 Final numbers:
 
