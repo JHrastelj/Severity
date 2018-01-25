@@ -436,11 +436,15 @@ Submitted job to ROCKS:
 qsub eigenstrat.sh
 
 
-The .pca.evec output file contains principal components that were plotted in R
+The .pca.evec output file contains principal components that were plotted in R:
+1) PC1 v PC2 of MS and g1000 data combined.
+2) PC1 v PC2 of MS data extracted from combined dataset.
+3) MS patients lying outside of 2sds of the mean of PC1 and PC2 were excluded.
+4) Final MS patient cohort plotted alone.
 
 
 
-Final numbers:
+# Final numbers:
 
 509 individuals initially:
 	3 individuals removed due to call rate <98%
