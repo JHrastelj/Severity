@@ -530,3 +530,77 @@ Repeat for all chromosomes.
 
 Now upload data to Michigan imputation server.
 N.B. Chose Eagle for phasing of autosomal chromosomes, but did not allow this for X chromosome, so chose shapeIT for the X chromosome.
+X chromosome imputation failed as imputation pipeline is not yet functional.
+
+# QC of imputed data
+
+
+1. Convert .vcf files to plink binary files:
+
+nano convert_vcf_plink.sh
+
+for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+
+do
+
+plink2 --vcf chr$i.dose.vcf --make-bed --out ch$i
+
+done
+
+chmod 744 convert_vcf_plink.sh
+bash convert_vcf_plink.sh
+
+
+2. Identify SNPs with R2 (INFO) score >/=0.8:
+
+nano find_
+
+cd ~/genomeQC/pilot/imputed/input
+
+for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+
+do
+
+awk '$7>0.8 {print $0}' ch$i.info > chr$i_SNPs_R2good.txt
+
+done
+
+chmod 744 find_
+
+
+3. Keep only data for these SNPs:
+
+nano extract_SNPs_R2good.sh
+
+cd ~/genomeQC/pilot/imputed/input
+
+for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+
+do
+
+plink --noweb --bfile ch$i --extract chr$i_SNPs_R2good.txt --make-bed --out chr$igoodR2
+
+done
+
+chmod 744 extract_SNPs_R2good.sh
+bash extract_SNPs_R2good.sh
+
+
+4.  Exclude SNPs with MAF < 1%:
+
+nano keep_SNPs_goodMAF.sh
+
+cd ~/genomeQC/pilot/imputed/input
+
+for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+
+do
+
+plink --noweb --bfile chr$igoodR2 --freq --out chr$igoodR2
+awk ‘$5<0.01 {print $2}’ chr$igoodR2.frq > chr$i_lowMAF.txt
+plink --noweb --bfile chr$igoodR2 --exclude chr$i_lowMAF.txt --make-bed --out chr$igoodR2MAF
+
+done
+
+chmod 744 extract_SNPs_goodMAF.sh
+bash extract_SNPs_goodMAF.sh
