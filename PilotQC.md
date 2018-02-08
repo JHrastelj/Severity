@@ -604,3 +604,8 @@ done
 
 chmod 744 extract_SNPs_goodMAF.sh
 bash extract_SNPs_goodMAF.sh
+
+5. Repeat relatedness exclusions:
+
+First merge binary files:
+
