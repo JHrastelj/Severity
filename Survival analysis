@@ -72,7 +72,7 @@ vi pilotpheno.txt
 copied data in.
 
 Changed delimiter to space:
-tr '\t' ' ' pilotpheno.txt > pilotpheno2.txt
+cat pilotpheno.txt | tr '\t' ' ' pilotpheno.txt > pilotpheno2.txt
 
 Run SurvivalGWAS_SV:
 
