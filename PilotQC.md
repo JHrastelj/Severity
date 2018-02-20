@@ -532,18 +532,18 @@ Now upload data to Michigan imputation server.
 N.B. Chose Eagle for phasing of autosomal chromosomes, but did not allow this for X chromosome, so chose shapeIT for the X chromosome.
 X chromosome imputation failed as imputation pipeline is not yet functional.
 
-# QC of imputed data
 
+# QC of imputed data
 
 1. Convert .vcf files to plink binary files:
 
 nano convert_vcf_plink.sh
 
-for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+for i in {1..22}
 
 do
 
-plink2 --vcf chr$i.dose.vcf --make-bed --out ch$i
+plink2 --vcf chr${i}.dose.vcf --make-bed --out ch${i}
 
 done
 
@@ -557,11 +557,11 @@ nano find_
 
 cd ~/genomeQC/pilot/imputed/input
 
-for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+for i in {1..22}
 
 do
 
-awk '$7>0.8 {print $0}' ch$i.info > chr$i_SNPs_R2good.txt
+awk '$7>0.8 {print $0}' ch${i}.info > chr${i}_SNPs_R2good.txt
 
 done
 
@@ -574,11 +574,11 @@ nano extract_SNPs_R2good.sh
 
 cd ~/genomeQC/pilot/imputed/input
 
-for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+for i in {1..22}
 
 do
 
-plink --noweb --bfile ch$i --extract chr$i_SNPs_R2good.txt --make-bed --out chr$igoodR2
+plink --noweb --bfile ch${i} --extract chr${i}_SNPs_R2good.txt --make-bed --out chr${i}goodR2
 
 done
 
@@ -592,20 +592,44 @@ nano keep_SNPs_goodMAF.sh
 
 cd ~/genomeQC/pilot/imputed/input
 
-for i in {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22}
+for x in {1..22}
 
 do
 
-plink --noweb --bfile chr$igoodR2 --freq --out chr$igoodR2
-awk ‘$5<0.01 {print $2}’ chr$igoodR2.frq > chr$i_lowMAF.txt
-plink --noweb --bfile chr$igoodR2 --exclude chr$i_lowMAF.txt --make-bed --out chr$igoodR2MAF
+plink --noweb --bfile chr${x}goodR2 --freq --out chr${x}goodR2
+awk ‘$5<0.01 {print $2}’ chr${x}goodR2.frq > chr${x}_lowMAF.txt
+plink --noweb --bfile chr${x}goodR2 --exclude chr${x}_lowMAF.txt --make-bed --out chr${x}goodR2MAF
 
 done
 
 chmod 744 extract_SNPs_goodMAF.sh
 bash extract_SNPs_goodMAF.sh
 
+
 5. Repeat relatedness exclusions:
 
 First merge binary files:
+
+plink2 --bfile chr1goodR2MAF --bmerge allchrfiles.txt --make-bed --out allchrgoodR2MAF
+
+where allchrfiles.txt is:
+chr2goodR2MAF.bed chr2goodR2MAF.bim chr2goodR2MAF.fam
+	...		...		...
+	
+Then run:
+
+plink2 --bfile allchrgoodR2MAF --genome
+
+Write file of individuals with PIHAT score > 0.125 and view file:
+
+awk ‘$10>0.125 {print $1, $2, $3, $4, $10}’ plink.genome > related.txt
+less related.txt
+
+There were no related individuals.
+
+
+6. Repeat PCA:
+
+(i) Exclude individuals 2sds away from the mean of PC1 and PC2 from PCA when combined with g1000 data:
+
 
