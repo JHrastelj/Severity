@@ -102,47 +102,64 @@ $MONO $DIRECTORY/survivalgwas-sv.exe -gf=$DIRECTORY/pilotgeno.vcf -sf=$DIRECTORY
 ---------
 
 Submit job to ROCKS:
-qsub -t1:10 pilotsurvival.sh
+qsub -t 1:10 pilotsurvival.sh
 
-Ouput successful for 550282 SNPs - No output for 8 SNPs on X chromosome between positions 154774663-154929162.  Unclear why - will need to look at these SNPs in more detail.
+----
 
-## Adding chromosome numbering for Manhattan plot.
+# Script for converting output from SurvivalGWAS_SV to format that can be read into R for creating Manhattan and Q-Q plots
+# Ensure script is in same directory as results files and .vcf file used for survival analysis
 
-Made txt file in format - Chr SNP - from vcf file:
-awk '{print $1,$2}' pilotgeno.vcf > piotChrSNP.txt
+#!/bin/bash
+set -a LANG=en_EN
 
-Deleted descriptive lines at top of file in txt editor.
+# Ouputs: all_${SURVDATA}.txt, ${GENO}_chrSNP.txt, ${GENO}_chrSNPsorted.txt, ${SURVDATA}_sorted.txt, ${SURVDATA}_ManQQ.txt, ${SURVDATA}_ManQQ_Psorted.txt
 
-Deleted 8 SNPs from pilotChrSNP.txt for which the analysis failed:
-sed '/rs1/d' pilotChrSNP.txt > pilotChrSNP2.txt
-sed '/rs2/d' pilotChrSNP2.txt > pilotChrSNP3.txt
-etc.
-OR delete the range of rows as they are contiguous:
-sed 'f,ld' pilotChrSNP.txt > pilotChrSNP2.txt #where f is the first line to be deleted and l is the last
+# GENO is name of .bim file used to make .vcf in survival analysis
+GENO=pilot400_geno
+# SURVDATA is name of survival analysis results file without "1-10.txt"
+SURVDATA=PilotTimeSurvivalResultsNew
 
-Sort files so compatible with join:
-LANG=en_EN sort -k2 pilotChrSNP2.txt > pilotChrSNP2sorted.txt
-LANG=en_EN sort -k1 PilotSurvivalResults.txt > PilotSurvivalResultssorted.txt
+# Combine all results files into one file
+cat ${SURVDATA}*.txt > all_${SURVDATA}.txt
 
-Join pilotChrSNP2.txt with PilotSurvivalResults.txt to add chromosome numbers:
-join -1 2 -2 1 pilotChrSNP2sorted.txt PilotSurvivalResultssorted.txt > PilotSurvivalResultsChr.txt
+# Need to annotate results with chromosome numbers
+# Create file containing list of SNPs with chromosomes
+/usr/bin/awk '{print $1,$3}' ${GENO}.vcf > ${GENO}_chrSNP.txt
 
-Delete extra SNP column (4th column):
-awk '{print $1,$2,$3,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17}' PilotSurvivalResultsChr.txt
+# Sort both files so compatible with join
+LANG=en_EN sort -k2 ${GENO}_chrSNP.txt > ${GENO}_chrSNPsorted.txt
+LANG=en_EN sort -k1 all_${SURVDATA}.txt > ${SURVDATA}_sorted.txt
 
-Re-sort based on Chromosome number and bp position:
-LANG=en_EN sort -k2,2n -k3,3n PilotSurvivalResultsChr.txt > PilotSurvivalResultsChrOrdered.txt
+# Join files to add chromosome number annotation
+LANG=en_EN join -1 2 -2 1 ${GENO}_chrSNPsorted.txt ${SURVDATA}_sorted.txt > tmp
 
-Make file compatible with 'qqman' software in R:
-awk '{print $1,$2,$3,$11}' PilotSurvivalResultsChrOrdered.txt > PilotSurvivalResultsManQQ.txt
+# Remove unwanted fields
+/usr/bin/awk '{print $1,$2,$3,$13}' tmp > tmp2
 
-Change 'Waldpv' to 'P' in header using text editor.
+# Sort by chromosome and BP position
+LANG=en_EN sort -k2,2n -k3,3n tmp2 > tmp3
 
-Convert all P values from exponential format:
-awk '{printf("%s %s %s %.18f\n",$1,$2,$3,$4)}' PilotSurvivalResultsManQQ.txt > PilotSurvivalResultsManQQSorted.txt
+# Convert all P values from exponential
+/usr/bin/awk '{printf("%s %s %s %.18f\n",$1,$2,$3,$4)}' tmp3 > ${SURVDATA}_ManQQ.txt
 
-Rank SNPs by P value:
-LANG=en_EN sort -k 4 PilotSurvivalResultsManQQSorted.txt > PilotSurvivalResultsManQQSortedP.txt
+# Rank SNPs by P value
+LANG=en_EN sort -k4 ${SURVDATA}_ManQQ.txt > ${SURVDATA}_ManQQ_Psorted.txt
+
+# Add header to results files
+echo 'SNP CHR BP P' > header.txt
+cat ${SURVDATA}_ManQQ.txt >> header.txt
+mv header.txt ${SURVDATA}_ManQQ.txt
+
+echo 'SNP CHR BP P' > header.txt
+cat ${SURVDATA}_ManQQ_Psorted.txt >> header.txt
+mv header.txt ${SURVDATA}_ManQQ_Psorted.txt
+
+# Delete tmp files
+rm tmp
+rm tmp2
+rm tmp3
+
+----
 
 ## Manhattan plot and Q-Q plot in R
 
@@ -151,18 +168,13 @@ getwd()
 install.packages("qqman")
 require(qqman)
 
-Need to make sure that the file to be read in is in the right format - 3 columns:  SNP, CHR, BP, P
-
-SR <- read.table("PilotSurvivalResultsManQQ.txt", header=T)
+SR <- read.table("PilotSurvivalResults_ManQQ.txt", header=T)
 
 head(SR)
 SRn <- as.numeric(as.character(SR$P))
 
-How many SNPs on each chromosome?
-as.data.frame(table(SR))
-
 Manhattan plot
-jpeg("PilotSurvivalResultsManhattan2.jpg")
+jpeg("PilotSurvivalResultsManhattan.jpg")
 manhattan(SRn)
 dev.off()
 
