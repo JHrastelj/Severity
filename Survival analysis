@@ -131,7 +131,7 @@ Delete extra SNP column (4th column):
 awk '{print $1,$2,$3,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17}' PilotSurvivalResultsChr.txt
 
 Re-sort based on Chromosome number and bp position:
-LANG=en_EN sort -k 2 PilotSurvivalResultsChr.txt > PilotSurvivalResultsChrOrdered.txt
+LANG=en_EN sort -k2,2n -k3,3n PilotSurvivalResultsChr.txt > PilotSurvivalResultsChrOrdered.txt
 
 Make file compatible with 'qqman' software in R:
 awk '{print $1,$2,$3,$11}' PilotSurvivalResultsChrOrdered.txt > PilotSurvivalResultsManQQ.txt
