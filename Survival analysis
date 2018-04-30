@@ -1,4 +1,4 @@
-# Survival analysis
+# Notes:  Survival analysis
 
 ## Useful code:
 Removing duplicate lines in a file:  awk '!seen[$0]++' filename
@@ -112,7 +112,7 @@ qsub -t 1:10 pilotsurvival.sh
 #!/bin/bash
 set -a LANG=en_EN
 
-# Ouputs: all_${SURVDATA}.txt, ${GENO}_chrSNP.txt, ${GENO}_chrSNPsorted.txt, ${SURVDATA}_sorted.txt, ${SURVDATA}_ManQQ.txt, ${SURVDATA}_ManQQ_Psorted.txt
+# Outputs: all_${SURVDATA}.txt, ${GENO}_chrSNP.txt, ${GENO}_chrSNPsorted.txt, ${SURVDATA}_sorted.txt, ${SURVDATA}_ManQQ.txt, ${SURVDATA}_ManQQ_Psorted.txt
 
 # GENO is name of .bim file used to make .vcf in survival analysis
 GENO=pilot400_geno
