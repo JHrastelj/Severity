@@ -1,4 +1,232 @@
-# Pilot Genotyping Data QC
+# Pilot Genotyping Data QC code
+
+#!/bin/bash
+
+### Input files must only include data for chromosomes 1-22 +/- 23.
+### Create directory containing only:  1) the script, 2) the .ped and .map input genotype files, and 3) the 1000 genomes plink binary files after they have undergone QC and had problematic LD regions removed.
+### QC parameters employed: sexcheck - keep those >0.8 and <0.2; coverage - keep individuals with >/=98% coverage; call rate - keep SNPs with call rate >/=98%; MAF - keep SNPs with MAF >/=5%; heterozygosity - keep individuals <4sd from mean F; relatedness - keep individuals with IBD </=0.125.
+
+
+echo "QC pipeline running"
+
+### If data is split per chromosome, combine all chromosomes
+cat *.map > GENO1.map
+cat *.ped > GENO1.ped
+
+if [ ! -f GENO1.map ]; then echo "Error: No GENO1 created"; fi
+if [ -f GENO1.map ]; then echo "GENO1 .ped and .map files created"; fi
+
+if [ ! -f GENO1.ped ]; then echo "Error: No GENO1 created"; fi
+
+### Convert .ped and .map files into plink binary files
+/bin/plink2 --file GENO1 --make-bed --out GENO1
+
+if [ ! -f GENO1.bed ]; then echo "Error: No first bed/bim/fam created"; fi
+if [ -f GENO1.bed ]; then echo "Plink binary files created"; fi
+
+### Identify individuals with incorrect sex information
+plink2 --bfile GENO1 --check-sex --out GENO1sex
+
+if [ ! -f GENO1sex.sexcheck ]; then echo "Error: No sexcheck created"; fi
+if [ -f GENO1sex.sexcheck ]; then echo "Sexcheck file created"; fi
+
+### Write individuals with sex check problems to file
+/usr/bin/awk '$6<0.8 && $6>0.2 {print $0}' GENO1sex.sexcheck > GENO1_sexerror.txt
+if [ -f GENO1_sexerror.txt ]; then echo "Individuals with sex errors identified"; fi
+### Remove these individuals
+plink2 --bfile GENO1 --remove GENO1_sexerror.txt --make-bed --out GENO2
+
+if [ ! -f GENO2.bed ]; then echo "Error: No GENO2 created"; fi
+if [ -f GENO2.bed ]; then echo "GENO2 plink binary files created - sex errors removed"; fi
+
+### Identify and exclude SNPs with poor coverage (<98%) and individuals with poor call rate (<98%)
+plink2 --bfile GENO2 --missing --out GENO2_missing
+
+if [ ! -f GENO2_missing.imiss ]; then echo "Error: No GENO2_missing created"; fi
+if [ -f GENO2_missing.imiss ]; then echo "Missing SNPs and individuals identified"; fi
+
+### Create plots in R of missingness
+Rscript missing.r
+
+if [ ! -f Missingness.png ]; then echo "Error: No first missingness R plots created"; fi
+if [ -f Missingness.png ]; then echo "First missingness plots created"; fi
+
+
+### Write file of SNPs with coverage <98% and remove them from data
+/usr/bin/awk '$5>0.02 {print $0}' GENO2_missing.lmiss > GENO2_missingSNPs.txt
+plink2 --bfile GENO2 --exclude GENO2_missingSNPs.txt --make-bed --out GENO3
+
+if [ ! -f GENO3.bed ]; then echo "Error: No GENO3 created"; fi
+if [ -f GENO3.bed ]; then echo "GENO3 plink binary files created - missing SNPs excluded"; fi
+
+### Re-calculate missing statistics after excluding SNPs with poor coverage and re-plot
+plink2 --bfile GENO3 --missing --out GENO3_missing
+Rscript missing2.r
+
+if [ ! -f Missingness2.png ]; then echo "Error: No second missingness R plots created"; fi
+if [ -f Missingness2.png ]; then echo "Second missingness plots created"; fi
+
+### Write file of individuals with call rate <98% and remove them from data
+/usr/bin/awk '$6>0.02 {print $0}' GENO3_missing.imiss > GENO3_missingindividuals.txt
+plink2 --bfile GENO3 --remove GENO3_missingindividuals.txt --make-bed --out GENO4
+
+if [ ! -f GENO4.bed ]; then echo "Error: No GENO4 created"; fi
+if [ -f GENO4.bed ]; then echo "GENO4 plink binary files created - missing individuals removed"; fi
+
+### Identify and remove SNPs with low MAF
+plink2 --bfile GENO4 --freq --out GENO4_freq
+usr/bin/awk '$5<0.05 {print $0}' GENO4_freq.frq > GENO4_lowMAFSNPs.txt
+plink2 --bfile GENO4 --exclude GENO4_lowMAFSNPs.txt --make-bed --out GENO5 
+
+if [ ! -f GENO4_freq.frq ]; then echo "Error: No GENO4_freq created"; fi
+if [ -f GENO4_freq.frq ]; then echo "MAF file created"; fi
+if [ ! -f GENO4_lowMAFSNPs.txt ]; then echo "Error: No GENO4_lowMAFSNPs created"; fi
+if [ -f GENO4_lowMAFSNPs.txt ]; then echo "Low MAF SNPs identified"; fi
+if [ ! -f GENO5.bed ]; then echo "Error: No GENO5 created"; fi
+if [ -f GENO5.bed ]; then echo "GENO5 plink binary files created - low MAF SNPs excluded"; fi
+
+### Determine autosomal heterozygosity for each individual
+plink2 --bfile GENO5 --het --out GENO5_het
+
+if [ ! -f GENO5_het.het ]; then echo "Error: No GENO5_het created"; fi
+if [ -f GENO5_het.het ]; then echo "First heterozygosity file created"; fi
+
+### Plot heterozygosity in R
+Rscript heterozygosity.r
+
+if [ ! -f Heterozygosity.png ]; then echo "Error: no first heterozygosity plot created"; fi 
+if [ ! -f HET_high.txt ]; then echo "Error: no HET_high file created"; fi
+if [ ! -f HET_low.txt ]; then echo "Error: no HET_low file created"; fi
+if [ -f Heterozygosity.png ]; then echo "First heterozygosity plots created"; fi
+
+### Remove individuals with outlying heterozygosity
+cat HET_high.txt HET_low.txt > HET_outliers.txt
+if [ -f HET_outliers.txt ]; then echo "Heterozygosity outliers identified"; fi
+if [ ! -f HET_outliers.txt ]; then echo "Error: heterozygosity outliers not identified"; fi
+plink2 --bfile GENO5 --remove HET_outliers.txt --make-bed --out GENO6
+
+if [ ! -f GENO6 ]; then echo "Error: no GENO6 files created"; fi
+if [ -f GENO6 ]; then echo "GENO6 plink binary files created - heterozygosity outliers removed"; fi
+
+### Re-calculate heterozygosity and plot
+plink2 --bfile GENO6 --het --out GENO6_het
+
+if [ ! -f GENO6_het.het ]; then echo "Error: No GENO6_het created"; fi
+if [ -f GENO6_het.het ]; then echo "Second heterozygosity file created"; fi
+
+Rscript heterozygosity2.r
+
+if [ ! -f Heterozygosity2.png ]; then echo "Error: no second heterozygosity plot created"; fi
+if [ -f Heterozygosity2.png ]; then echo "Second heterozygosity plots created"; fi
+
+### Identify and exclude related pairs of individuals
+### LD prune data
+plink2 --bfile GENO6 --indep-pairwise 1500 150 0.2 --out GENO6_LDprune
+
+if [ ! -f GENO6_LDprune.prune.in ]; then echo "Error: no prune.in file created"; fi
+if [ -f GENO6_LDprune.prune.in ]; then echo "LD pruning - done"; fi
+
+plink2 --bfile GENO6 --extract GENO6_LDprune.prune.in --genome --out GENO6_relatedness
+
+if [ ! -f GENO6_relatedness.genome ]; then echo "Error: no relatedness file created"; fi
+if [ -f GENO6_relatedness.genome ]; then echo	"Relatedness file created"; fi 
+
+/usr/bin/awk '$10==1 {print $1,$2,$3,$4,$10}' GENO6_relatedness.genome > GENO6_identical.txt
+/usr/bin/awk '{print $3,$4,$5}' GENO6_identical.txt > GENO6_otheridentical.txt
+
+if [ ! -f GENO6_identical.txt ]; then echo "Error: Identical individuals not identified"; fi
+if [ -f GENO6_identical.txt ]; then echo "Identical individuals identified"; fi
+
+/usr/bin/awk '$10<1 {print $1,$2,$3,$4,$10}' GENO6_relatedness.genome > GENO6_notidentical.txt
+
+if [ ! -f GENO6_notidentical.txt ]; then echo "Error: non-identical individuals not identified"; fi
+if [ -f GENO6_notidentical.txt ]; then echo "Non-identical individuals identified"; fi
+
+/usr/bin/awk '$10>0.125 {print $1,$2,$3,$4,$10}' GENO6_notidentical.txt > GENO6_related.txt
+
+if [ ! -f GENO6_related.txt ]; then echo "Error: Related individuals not identified"; fi
+if [ -f GENO6_related.txt ]; then echo "Related individuals identified"; fi
+
+plink2 --bfile GENO6 --remove GENO6_identical.txt --make-bed --out GENO7
+plink2 --bfile GENO7 --remove GENO6_otheridentical.txt --make-bed --out GENO8
+plink2 --bfile GENO8 --remove GENO6_related.txt --make-bed --out GENO9
+
+if [ ! -f GENO7.bed ]; then echo "Error: no GENO7 plink binary files created"; fi
+if [ -f GENO7.bed ]; then echo "GENO7 plink binary files created - identical individuals removed"; fi
+
+if [ ! -f GENO8.bed ]; then echo "Error: no GENO8 plink binary files created"; fi
+if [ -f GENO8.bed ]; then echo "GENO8 plink binary files created - other identical individuals removed"; fi
+
+if [ ! -f GENO9.bed ]; then echo "Error: no GENO9 plink binary files created"; fi
+if [ -f GENO9.bed ]; then echo "GENO9 plink binary files created - related individuals removed"; fi
+
+### Calculate Hardy-Weinberg Equilibrium statistics for further use if needed
+plink2 --bfile GENO9 --hardy --out GENO9_HWE
+
+echo "PIPELINE COMPLETE"
+
+## Rscripts
+
+### missing.r
+#!/usr/bin/Rscript
+IMISS <- read.table("GENO2_missing.imiss", h=T, as.is=T)
+LMISS <- read.table("GENO2_missing.lmiss", h=T, as.is=T)
+png("Missingness.png")
+oldpar <- par(mfrow = c(1,2))
+plot((1:dim(IMISS)[1])/(dim(IMISS)[1]-1), sort(1-IMISS$F_MISS), main ="Ordered individual call rate", xlab="Quantile", ylab="Call rate");
+plot((1:dim(LMISS)[1])/(dim(LMISS)[1]-1), sort(1-LMISS$F_MISS), main ="Ordered SNP coverage", xlab="Quantile", ylab="Coverage");
+par(oldpar)
+dev.off()
+
+### missing2.r
+#!/usr/bin/Rscript
+IMISS2 <- read.table("GENO3_missing.imiss", h=T, as.is=T)
+LMISS2 <- read.table("GENO3_missing.lmiss", h=T, as.is=T)
+png("Missingness2.png")
+oldpar <- par(mfrow = c(1,2))
+plot((1:dim(IMISS2)[1])/(dim(IMISS2)[1]-1), sort(1-IMISS2$F_MISS), main ="Ordered individual call rate", xlab="Quantile", ylab="Call rate");
+plot((1:dim(LMISS2)[1])/(dim(LMISS2)[1]-1), sort(1-LMISS2$F_MISS), main ="Ordered SNP coverage", xlab="Quantile", ylab="Coverage");
+par(oldpar)
+dev.off()
+
+### heterozygosity.r
+#!/usr/bin/Rscript
+
+HET <- read.table("GENO5_het.het", h=T, as.is=T)
+H <- (HET$N.NM. - HET$O.HOM.) / HET$N.NM.
+png("Heterozygosity.png")
+oldpar = par(mfrow=c(1,2))
+hist(H,50, main="Histogram of Heterozygosity", xlab="Heterozygosity")
+abline(v=median(H), lty=3, col='red')
+hist(HET$F,50, main="Histogram of F coefficient", xlab="Inbreeding coefficient")
+abline(v=median(HET$F), lty=3, col='red')
+abline(v=(mean(HET$F) + 4*(sd(HET$F))), lty=3, col='red')
+abline(v=(mean(HET$F) - 4*(sd(HET$F))), lty=3, col='red')
+par(oldpar)
+dev.off()
+
+HEThigh <- HET[HET$F>((mean(HET$F) + 4*(sd(HET$F)))),]
+HETlow <- HET[HET$F<((mean(HET$F) - 4*(sd(HET$F)))),]
+
+write.table(HEThigh, file="HET_high.txt", quote=FALSE, row.names=FALSE)
+write.table(HETlow, file="HET_low.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
+
+### heterozygosity2.r
+#!/usr/bin/Rscript
+
+HET2 <- read.table("GENO6_het.het", h=T, as.is=T)
+H2 <- (HET2$N.NM. - HET2$O.HOM.) / HET2$N.NM.
+png("Heterozygosity2.png")
+oldpar = par(mfrow=c(1,2))
+hist(H2,50, main="Histogram of Heterozygosity", xlab="Heterozygosity")
+abline(v=median(H2), lty=3, col='red')
+hist(HET2$F,50, main="Histogram of F coefficient", xlab="Inbreeding coefficient")
+abline(v=median(HET2$F), lty=3, col='red')
+par(oldpar)
+dev.off()
+
+
+# Pilot genotyping QC notes
 
 Pilot data:  SNP genotyping data (.ped and .map files) from Illumina Human660-Quad chip – 509 cases, 594398 SNPs.
 Software required: Plink.
