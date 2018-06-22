@@ -10,6 +10,16 @@ Finding common elements in two files:  awk 'NR==FNR{a[$1];next}$1 in a{print $1}
 To get rid of incompatibility between sort and join:  LANG=en_EN sort -k 1,1 <myfile> ... then LANG=en_EN join ..
 To sort a file but ignore the (single line) header:  (head -n 1 <file> && tail -n +2 <file> | sort) > newfile
 To replace a value in a column with a different value (like excel =IF(A1=0,1,0):  awk '{ $6 = ($6 == 0 ? 1 : $6) } 1' tmp > tmp2
+To combine columns in R:
+> DF = data.frame(A = LETTERS[1:10], B = LETTERS[11:20])
+> DF$C = paste(DF$A, DF$B, sep="_")
+> head(DF)
+  A B  C
+1 A K A_K
+2 B L B_L
+3 C M C_M
+
+
 
 ## Phenotyping data
 
