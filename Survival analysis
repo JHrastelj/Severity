@@ -9,7 +9,7 @@ Deleting specific range of rows:  sed 'f,ld' file > newfile #where f is the firs
 Finding common elements in two files:  awk 'NR==FNR{a[$1];next}$1 in a{print $1}' file1 file2 #builds first column of first file into an array then checks second file line-by-line for that value and prints it if it exists.  #can adjust to printing the whole line by changing to $0 at the end.
 To get rid of incompatibility between sort and join:  LANG=en_EN sort -k 1,1 <myfile> ... then LANG=en_EN join ..
 To sort a file but ignore the (single line) header:  (head -n 1 <file> && tail -n +2 <file> | sort) > newfile
-To replace a value in a column with a different value (like excel =IF(A1=0,1,0):  awk '{ $6 = ($6 == 0 ? 1 : $6) } 1' tmp > tmp2
+To replace a value in a column with a different value (like excel =IF($6=0,2,1):  awk '{ $6 = ($6 == 0 ? 2 : $6) } 1' tmp > tmp2
 To combine columns in R:
 > DF = data.frame(A = LETTERS[1:10], B = LETTERS[11:20])
 > DF$C = paste(DF$A, DF$B, sep="_")
