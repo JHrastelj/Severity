@@ -789,7 +789,7 @@ for i in {1..22}
 
 do
 
-awk '$7>0.8 {print $0}' ch${i}.info > chr${i}_SNPs_R2good.txt
+awk '$7>0.8 {print $1}' ch${i}.info > chr${i}_SNPs_R2good.txt
 
 done
 
@@ -825,7 +825,9 @@ for x in {1..22}
 do
 
 plink --noweb --bfile chr${x}goodR2 --freq --out chr${x}goodR2
+
 awk ‘$5<0.01 {print $2}’ chr${x}goodR2.frq > chr${x}_lowMAF.txt
+
 plink --noweb --bfile chr${x}goodR2 --exclude chr${x}_lowMAF.txt --make-bed --out chr${x}goodR2MAF
 
 done
