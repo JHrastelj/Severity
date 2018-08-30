@@ -844,7 +844,8 @@ plink2 --bfile chr1goodR2MAF --bmerge allchrfiles.txt --make-bed --out allchrgoo
 
 where allchrfiles.txt is:
 chr2goodR2MAF.bed chr2goodR2MAF.bim chr2goodR2MAF.fam
-	...		...		...
+
+...		...		...
 	
 Then run:
 
@@ -858,8 +859,6 @@ less related.txt
 There were no related individuals.
 
 
-6. Repeat PCA:
-
-(i) Exclude individuals 2sds away from the mean of PC1 and PC2 from PCA when combined with g1000 data:
+6. Repeat PCA of only imputed MS cohort data to look for any clear strata, groups or other artefacts introduced by imputation.
 
 
