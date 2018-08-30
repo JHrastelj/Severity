@@ -843,6 +843,7 @@ First merge binary files:
 plink2 --bfile chr1goodR2MAF --bmerge allchrfiles.txt --make-bed --out allchrgoodR2MAF
 
 where allchrfiles.txt is:
+
 chr2goodR2MAF.bed chr2goodR2MAF.bim chr2goodR2MAF.fam
 
 ...		...		...
