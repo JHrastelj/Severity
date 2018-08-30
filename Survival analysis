@@ -19,7 +19,7 @@ To combine columns in R:
 1 A K A_K
 2 B L B_L
 3 C M C_M
-
+To split column data into different columns based on "_" delimiter (opposite of paste function above):  cbind(as.data.frame(do.call(rbind,strsplit(as.character(DF$C),split="_"))),DF)
 
 
 ## Phenotyping data
