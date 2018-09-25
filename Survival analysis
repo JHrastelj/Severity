@@ -7,6 +7,7 @@ Findings differences between two files:  diff fileA fileB
 Deleting rows containing a particular string e.g. rs123456:  sed '/rs123456/d' file > newfile
 Deleting specific range of rows:  sed 'f,ld' file > newfile #where f is the first row to be deleted and l is the last
 Finding common elements in two files:  awk 'NR==FNR{a[$1];next}$1 in a{print $1}' file1 file2 #builds first column of first file into an array then checks second file line-by-line for that value and prints it if it exists.  #can adjust to printing the whole line by changing to $0 at the end.
+OR:  grep -f file1 file2 > lines_in_file2_containing_strings_listed_in_file1.txt #where file1 is a list of strings in a single column
 To get rid of incompatibility between sort and join:  LANG=en_EN sort -k 1,1 <myfile> ... then LANG=en_EN join ..
 To sort a file but ignore the (single line) header:  (head -n 1 <file> && tail -n +2 <file> | sort) > newfile
 To replace a value in a column with a different value (like excel =IF($6=0,2,1):  awk '{ $6 = ($6 == 0 ? 2 : $6) } 1' tmp > tmp2
